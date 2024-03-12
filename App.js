@@ -1,17 +1,38 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, TextInput, View, Button } from 'react-native';
+import { StyleSheet, TextInput, View, Button, Alert } from 'react-native';
 import MapView from 'react-native-maps';
 import { Marker } from 'react-native-maps';
 import { useEffect, useState } from 'react';
+import * as Location from 'expo-location'
 export default function App() {
+
   const [address, setAddress] = useState('');
-  const [data, setData] = useState([]);
+  //const [data, setData] = useState([]);
   const [region, setRegion] = useState({
     latitude: 60.200692,
     longitude: 24.934302,
     latitudeDelta: 0.0322,
     longitudeDelta: 0.0221,});
 
+    useEffect (() =>{
+      (async () => {
+        let {status} = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('No permission to get location')
+          return;
+        }
+        let location = await Location.getCurrentPositionAsync({});
+        const latitude = parseFloat(location.coords.latitude);
+        const longitude = parseFloat(location.coords.longitude);
+        setRegion(prevRegion => ({
+          ...prevRegion,
+          latitude,
+          longitude,
+        }));
+      })();
+    }, []);
+
+    
 
     const showLocation = () => {
       fetch(`https://geocode.maps.co/search?q=${address}&api_key=65eed85c3ce58164958335wylbe989b`)
@@ -34,9 +55,11 @@ export default function App() {
           latitude,
           longitude,
         }));
+        setAddress('');
       })
       .catch(err => console.error(err))
     }
+
     
   return (
     <View style={styles.container}>
@@ -44,7 +67,9 @@ export default function App() {
         <TextInput
         style={styles.input}
         placeholder='address'
-        onChangeText={text => setAddress(text)} />
+        onChangeText={text => setAddress(text)}
+        value={address}
+        />
         <Button
         title='Show'
         onPress={showLocation}/>
